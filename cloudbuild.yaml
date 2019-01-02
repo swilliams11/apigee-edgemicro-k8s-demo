@@ -1,0 +1,23 @@
+steps:
+# update the secret.yaml file with the updated config
+- name: 'ubuntu'
+  args: ['bash', './update-secret-yaml.sh']
+  volumes:
+  - name: 'vol1'
+    path: '/updated_secret'
+# update the config
+- name: 'gcr.io/cloud-builders/kubectl'
+  args: ['apply', '-f', '/updated_secret/secret.yaml', '-n', 'default']
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=microgateway'
+  volumes:
+  - name: 'vol1'
+    path: '/updated_secret'
+
+# delete the pod to force create a new one which will pick up the new configuration
+- name: 'gcr.io/cloud-builders/kubectl'
+  args: ['delete', 'pod', '-l', 'app=edge-microgateway']
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=microgateway'
