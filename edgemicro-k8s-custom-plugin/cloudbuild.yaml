@@ -1,0 +1,60 @@
+steps:
+# npm install in the logger directory
+- name: 'gcr.io/cloud-builders/npm'
+  args: ['install', '--prefix', './plugins/logger']
+# zip the custom plugin directory
+#- name: 'ubuntu'
+#  args: ['bash', './handle-plugins.sh']
+  #volumes:
+  #- name: 'vol1'
+  #  path: '/myplugins'
+
+# build a docker image from the docker file
+- name: 'gcr.io/cloud-builders/docker'
+  args: ["build", "-t", "gcr.io/$PROJECT_ID/edgemicro:$TAG_NAME", "."]
+  #volumes:
+  #- name: 'vol1'
+  #  path: '/myplugins'
+
+# push the docker image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ["push", "gcr.io/$PROJECT_ID/edgemicro:$TAG_NAME"]
+#  volumes:
+#  - name: 'vol1'
+#    path: '/myplugins'
+
+# update the secret.yaml file with the updated config
+- name: 'ubuntu'
+  args: ['bash', './update-secret-yaml.sh']
+  volumes:
+  - name: 'vol1'
+    path: '/updated_secret'
+
+# update the config
+- name: 'gcr.io/cloud-builders/kubectl'
+  args: ['apply', '-f', '/updated_secret/secret.yaml', '-n', 'default']
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=microgateway'
+  volumes:
+  - name: 'vol1'
+    path: '/updated_secret'
+
+# update the secrets with the patch command.
+# Patch command still replaces all the keys in the map with the config key.
+#- name: 'gcr.io/cloud-builders/kubectl'
+#  args: ['patch', 'secret', 'mgwsecret', '--patch', '\"$(cat /updated_secret/secret.yaml)\"', '-n', 'default']
+#  env:
+#  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
+#  - 'CLOUDSDK_CONTAINER_CLUSTER=microgateway'
+#  volumes:
+#  - name: 'vol1'
+#    path: '/updated_secret'
+
+# update the deployment by updating the container image.
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+  - 'set'
+  - 'image'
+  - 'deployment/edge-microgateway'
+  - 'edge-microgateway=gcr.io/$PROJECT_ID/edgemicro:$TAG_NAME'

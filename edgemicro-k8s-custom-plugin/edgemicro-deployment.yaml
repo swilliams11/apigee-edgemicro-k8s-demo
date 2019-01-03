@@ -1,0 +1,73 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  name: edge-microgateway
+  namespace: default
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: edge-microgateway
+    spec:
+      containers:
+      - env:
+        - name: EDGEMICRO_ORG
+          valueFrom:
+            secretKeyRef:
+              key: mgorg
+              name: mgwsecret
+        - name: EDGEMICRO_ENV
+          valueFrom:
+            secretKeyRef:
+              key: mgenv
+              name: mgwsecret
+        - name: EDGEMICRO_KEY
+          valueFrom:
+            secretKeyRef:
+              key: mgkey
+              name: mgwsecret
+        - name: EDGEMICRO_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: mgsecret
+              name: mgwsecret
+        - name: EDGEMICRO_CONFIG
+          valueFrom:
+            secretKeyRef:
+              key: mgconfig
+              name: mgwsecret
+        - name: EDGEMICRO_CONFIG_DIR
+          value: /opt/apigee/.edgemicro
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: INSTANCE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        image: gcr.io/apigee-k8s-edgemicro-sw/edgemicro:v1
+        imagePullPolicy: Always
+        name: edge-microgateway
+        ports:
+        - containerPort: 8000
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: "1"
+            memory: 1Gi
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+status: {}
