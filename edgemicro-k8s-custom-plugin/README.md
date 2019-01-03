@@ -4,11 +4,9 @@ This project was originally published under GCP Cloud Source Repositories under 
 
 The GCP Source Repository for the custom plugin is named `edgemicro-k8s-custom-plugin`, which is also under the `apigee-k8s-edgemicro-sw` repository.
 
-This repo demonstrates how to build a CI/CD process for a custom Edge Microgateway plugin and it deploys that custom plugin to an Edge Microgateway running on Kubernetes.  The custom plugins are included within the Docker image, and the GCP build updates the deployment's container image based on the repository's tag and then pulls the updated image (based on the repo's tag) when a new pod is created.
+This repo demonstrates how to build a CI/CD process for a custom Edge Microgateway plugin and it deploys that plugin to an Edge Microgateway running on Kubernetes.  The custom plugins are included within the Docker image, and the GCP build updates the deployment's container image based on the repository's tag and then pulls the updated image when a new pod is created.  The build is triggered when you add a tag to the Github repository.
 
-Another option is to use a rolling upgrade by changing the last step in the `cloudbuild.yaml` and include the `edgemicro-deployment.yaml` file.
-
-The advantage of using the approaches outlined above is that you this is zero Micorgateway downtime when you update the custom plugin.  
+The advantage of using this approach is that there is zero Micorgateway downtime when you update the custom plugin because K8S performs a [rolling update](https://kubernetes.io/docs/tasks/run-application/rolling-update-replication-controller/).  
 
 ## Summary
 * The logger plugin is based on the following [documentation](https://apigee.com/about/blog/api-technology/tutorial-adding-logger-plugin-apigee-edge-microgateway).  
@@ -46,9 +44,10 @@ The `cloudbuild.yaml` file contains six steps.
 1. executes `npm install` to install the plugins dependencies
 2. build a docker image with the custom plugin code included in the image and updates the image tag
 3. pushes the docker image to Google Cloud Containers within your GCP project
-4. updates the secret.yaml file
+4. updates the secret.yaml file with the updated Micorgateway config file
+   * this double base64 encodes the Microgateway config file and includes it in the secret.yaml file
 5. applies the updated secret.yaml file (push the changes to the k8s cluster). **This does not update the existing Microgateway pods.**
-6. updates the container image to the image pushed in step 3.  **This updates the containers to use the new container image.**
+6. updates the container image to include the image pushed in step 3.  **This updates the containers to use the new container image.**
 
 
 ## Update the microgateway.sh file
@@ -62,6 +61,7 @@ Add the following to the microgateway.sh file.
 
 
 ## Demo
+By default you only have one pod running.
 
 1. Execute the following commands to trigger a build.
 ```
@@ -121,6 +121,93 @@ ls /opt/apigee/.edgemicro
 vi /opt/apigee/.edgemicro/YOURORG-ENV-config.yaml
 ```
 
+
+7. Modify the logger plugin (anyway you like) and commit your code and push a new tag as shown below.
+You should see the the new build triggered in the
+
+```
+./tag-add.sh v2
+```
+
+### Rolling Updates
+K8S Deployments allow you to perform [rolling updates](https://kubernetes.io/docs/tasks/run-application/rolling-update-replication-controller/).  
+
+
+1. If you want to see K8S perform a rolling upgrade, then increase the replica count to 3 (assuming you have enough bandwith in your K8S cluster).  
+```
+kubectl scale deployment edge-microgateway --replicas=3
+```
+
+Check that the deployment was scaled successfully.
+```
+kubectl get deployment
+```
+
+2. Configure autoscaling on the deployment. Review the documentation above to understand.
+```
+kubectl autoscale deployment edge-microgateway --min=3 --max=5 --cpu-percent=80
+```
+
+3. Now make a change to the logger plugin, commit and push your code to the remote repo, then add and push a new tag to the remote repo.
+
+```
+./tag-add.sh v1.4
+```
+
+or
+
+```
+git tag -a v1.4 -m "version 1.4"
+git push origin v1.4
+```
+
+4. You can monitor the result of the rollout with the following commands.
+```
+kubectl get deployment edge-microgateway
+```
+```
+NAME                DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+edge-microgateway   3         4         3            2           14d
+```
+
+* View the rollout history.
+  ```
+  kubectl rollout history deployment edge-microgateway
+  ```
+  ```
+  deployments "edge-microgateway"
+  REVISION  CHANGE-CAUSE
+  1         <none>
+  2         <none>
+  3         <none>
+  4         <none>
+  5         <none>
+  6         <none>
+  ```
+
+* Get the rollout status.
+  ```
+  kubectl rollout status deployment edge-microgateway
+  ```
+  ```
+  Waiting for rollout to finish: 2 out of 3 new replicas have been updated...
+  ```
+
+#### Cancel a rollout
+```
+kubectl rollout undo deployment edge-microgateway
+```
+
+if you view the rollout status you should see something similar to the console below.
+```
+kubectl rollout status deployment edge-microgateway
+```
+```
+Waiting for rollout to finish: 1 old replicas are pending termination...
+Waiting for rollout to finish: 1 old replicas are pending termination...
+Waiting for rollout to finish: 2 of 3 updated replicas are available...
+Waiting for rollout to finish: 2 of 3 updated replicas are available...
+```
 
 ## Delete the tag from remote and local repositories
 You can delete a tag from the remote repository with the following commands.
