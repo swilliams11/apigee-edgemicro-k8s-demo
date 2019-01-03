@@ -34,7 +34,7 @@ The advantage of using the approaches outlined above is that you this is zero Mi
 ## Google Cloud Build
 You should configure the build as shown below.  Notice that it will build only if you push a tag to the repository.  
 
-![gcp-build-trigger](#images/gcp-build-trigger.png)
+![gcp-build-trigger](images/gcp-build-trigger.png)
 
 
 ## Secret.yaml
@@ -76,11 +76,11 @@ or
 ```
 
 2. You should see all six build steps succeed.
-![build steps](#images/gcp-build-steps.png)
+![build steps](images/gcp-build-steps.png)
 
 Once all steps in the build succeed you can view the pod revision history.
 
-![pod revision history](#images/gcp-pod-revisions.png)
+![pod revision history](images/gcp-pod-revisions.png)
 
 3. Run the following shell script command to test that the new pod is using the updated Edgemicro config file.
 
