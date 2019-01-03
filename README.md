@@ -2,6 +2,8 @@
 
 This project was originally published under GCP Cloud Source Repositories under the project named `apigee-k8s-edgemicro-sw`.  The Google Cloud Source repository name is `edgemicro-config`.  
 
+The GCP Source Repository for the custom plugin is named `edgemicro-k8s-custom-plugin`, which is also under the `apigee-k8s-edgemicro-sw` repository.
+
 This repo demonstrates how to build a CI/CD process with Edgemicro and Kubernetes.
 
 ## Prerequisites
