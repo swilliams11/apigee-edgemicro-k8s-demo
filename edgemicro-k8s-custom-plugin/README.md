@@ -15,10 +15,10 @@ The advantage of using this approach is that there is zero Micorgateway downtime
 
 
 ## Prerequisites
-1. Follow the prerequisites listed [here](#../README.md).
+1. Follow the prerequisites listed [here](https://github.com/swilliams11/apigee-edgemicro-k8s-demo#prerequisites).
 2. You should be familiar with [how to create a custom plugin](https://docs.apigee.com/api-platform/microgateway/2.5.x/develop-custom-plugins) in Edge Microgateway
-3. This folder uses [Google Cloud Container Registry](https://cloud.google.com/container-registry)
-4. copy your Edge Microgateway config file to this directory and ensure that it includes the following plugins. (see the example org-test-config.yaml)
+3. This demo uses [Google Cloud Container Registry](https://cloud.google.com/container-registry)
+4. Copy your Edge Microgateway config file to this directory and ensure that it includes the following plugins. (see the example `org-test-config.yaml`)
 ```
   plugins:
     sequence:
@@ -26,7 +26,7 @@ The advantage of using this approach is that there is zero Micorgateway downtime
       - logger
       - accumulate-response
   ```
-5. Update the `microgateway.sh` file with your Apigee Edge org and environment names and include the Microgateway's key and secret which you received when you configured the microgateway.  
+5. Update the `microgateway.sh` file with your Apigee Edge org and environment names and include the Microgateway's key and secret that you received when you configured the Microgateway.  
 
 
 ## Google Cloud Build
@@ -36,28 +36,28 @@ You should configure the build as shown below.  Notice that it will build only i
 
 
 ## Secret.yaml
-If you followed the instructions in "[creating a Kubernetes cluster](https://github.com/apigee-internal/microgateway/tree/master/kubernetes)", then you already created the `mgwsecret` in your K8S cluster. The Microgateway will use this secrets object to pull the Apigee organization name, environment, microgateway key & secret, and the Edge Microgateway configuration file.  The GCP Build will use this `secret.yaml` file to update the existing secret object in the Kubernetes cluster.  
+If you followed the instructions in "[creating a Kubernetes cluster](https://github.com/apigee-internal/microgateway/tree/master/kubernetes)", then you already created the `mgwsecret` in your K8S cluster. The Microgateway will use this secret object to pull the Apigee organization name, environment, microgateway key & secret, and the Edge Microgateway configuration file when the pod starts the container.  These values will be available to the Microgateway via environment variables.  The GCP Build uses this `secret.yaml` file to update the existing secret object in the Kubernetes cluster.  
 
 
 ## cloudbuild.yaml
 The `cloudbuild.yaml` file contains six steps.  
-1. executes `npm install` to install the plugins dependencies
-2. build a docker image with the custom plugin code included in the image and updates the image tag
-3. pushes the docker image to Google Cloud Containers within your GCP project
-4. updates the secret.yaml file with the updated Micorgateway config file
-   * this double base64 encodes the Microgateway config file and includes it in the secret.yaml file
-5. applies the updated secret.yaml file (push the changes to the k8s cluster). **This does not update the existing Microgateway pods.**
-6. updates the container image to include the image pushed in step 3.  **This updates the containers to use the new container image.**
+1. Execute `npm install` to install the plugins dependencies.
+2. Build a docker image with the custom plugin code included in the image and updates the image tag
+3. Push the docker image to Google Cloud Containers within your GCP project.
+4. Update the `secret.yaml` file with the updated Micorgateway config file.
+   * This double base64 encodes the Microgateway config file and includes it in the `secret.yaml` file.
+5. Execute `kubectl apply` with the updated `secret.yaml` file `-f` argument; this pushes the changes to the k8s cluster. **This does not update the existing Microgateway pods.**
+6. Update the deployments container image to include the image pushed in step 3.  **This updates the containers to use the new container image and starts the rolling update.**
 
 
 ## Update the microgateway.sh file
-Add the following to the microgateway.sh file.
+Add the following to the `microgateway.sh` file.
 * Apigee org
 * Apigee env
 * Microgateway key
 * Microgateway secret
 
-**You get the Microgateway Key and Secret after you run the edgemicro configure command.**
+**You get the Microgateway key and secret after you run the [edgemicro configure command](https://docs.apigee.com/api-platform/microgateway/2.5.x/setting-and-configuring-edge-microgateway#Part1).**
 
 
 ## Demo
@@ -82,7 +82,7 @@ Once all steps in the build succeed you can view the pod revision history.
 
 ![pod revision history](images/gcp-pod-revisions.png)
 
-3. Run the following shell script command to test that the new pod is using the updated Edgemicro config file.
+3. Run the following shell script command to test that the new pod is using the updated Edge Microgateway config file.
 
 ```
 for i in {1..20}; do curl http://$GATEWAY_IP/edgemicro_k8s_hello/ -H "x-api-key:YOUR_APIKEY"; done
@@ -95,7 +95,7 @@ Hello world
 ...
 ```
 
-4. ssh into a running container.
+4. Ssh into a running container.
 ```
 kubectl get pods
 ```
@@ -123,17 +123,21 @@ vi /opt/apigee/.edgemicro/YOURORG-ENV-config.yaml
 
 
 7. Modify the logger plugin (anyway you like) and commit your code and push a new tag as shown below.
-You should see the the new build triggered in the
-
+You should see the the new build triggered in the Google Cloud Build history.  
 ```
-./tag-add.sh v2
+git tag -a v1.2 -m "version 1.2"
+git push origin v1.2
+```
+or
+```
+./tag-add.sh v1.2
 ```
 
 ### Rolling Updates
 K8S Deployments allow you to perform [rolling updates](https://kubernetes.io/docs/tasks/run-application/rolling-update-replication-controller/).  
 
 
-1. If you want to see K8S perform a rolling upgrade, then increase the replica count to 3 (assuming you have enough bandwith in your K8S cluster).  
+1. If you want to see K8S perform a rolling update, then increase the replica count to 3 (assuming you have enough bandwith in your K8S cluster).  
 ```
 kubectl scale deployment edge-microgateway --replicas=3
 ```
@@ -143,7 +147,7 @@ Check that the deployment was scaled successfully.
 kubectl get deployment
 ```
 
-2. Configure autoscaling on the deployment. Review the documentation above to understand what this command is doing.
+2. Configure autoscaling on the deployment. Review the "rolling update" documentation above to understand what this command is doing.
 ```
 kubectl autoscale deployment edge-microgateway --min=3 --max=5 --cpu-percent=80
 ```
@@ -151,14 +155,14 @@ kubectl autoscale deployment edge-microgateway --min=3 --max=5 --cpu-percent=80
 3. Now make a change to the logger plugin, commit and push your code to the remote repo, then add and push a new tag to the remote repo.
 
 ```
-./tag-add.sh v1.4
+./tag-add.sh v1.3
 ```
 
 or
 
 ```
-git tag -a v1.4 -m "version 1.4"
-git push origin v1.4
+git tag -a v1.3 -m "version 1.3"
+git push origin v1.3
 ```
 
 4. You can monitor the result of the rollout with the following commands.
@@ -198,7 +202,7 @@ edge-microgateway   3         4         3            2           14d
 kubectl rollout undo deployment edge-microgateway
 ```
 
-if you view the rollout status you should see something similar to the console below.
+If you view the rollout status you should see something similar to the console below.
 ```
 kubectl rollout status deployment edge-microgateway
 ```
