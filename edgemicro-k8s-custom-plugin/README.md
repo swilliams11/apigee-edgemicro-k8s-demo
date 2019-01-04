@@ -2,7 +2,7 @@
 
 This project was originally published under GCP Cloud Source Repositories under the project named `apigee-k8s-edgemicro-sw`.  The Google Cloud Source repository name is `edgemicro-config`.  
 
-The GCP Source Repository for the custom plugin is named `edgemicro-k8s-custom-plugin`, which is also under the `apigee-k8s-edgemicro-sw` repository.
+The GCP Source Repository for the custom plugin is named `edgemicro-k8s-custom-plugin`, which is also under the `apigee-k8s-edgemicro-sw` GCP project.
 
 This repo demonstrates how to build a CI/CD process for a custom Edge Microgateway plugin and it deploys that plugin to an Edge Microgateway running on Kubernetes.  The custom plugins are included within the Docker image, and the GCP build updates the deployment's container image based on the repository's tag and then pulls the updated image when a new pod is created.  The build is triggered when you add a tag to the Github repository.
 
@@ -143,7 +143,7 @@ Check that the deployment was scaled successfully.
 kubectl get deployment
 ```
 
-2. Configure autoscaling on the deployment. Review the documentation above to understand.
+2. Configure autoscaling on the deployment. Review the documentation above to understand what this command is doing.
 ```
 kubectl autoscale deployment edge-microgateway --min=3 --max=5 --cpu-percent=80
 ```

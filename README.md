@@ -15,21 +15,21 @@ This repo demonstrates how to build a CI/CD process with Edgemicro and Kubernete
 6. Copy your Edge Microgateway config file (`org-env-config.yaml`) file to this directory.  
 
 ## Create a new Google Cloud Build configuration
-The configuration for Google Cloud Build is shown below. Make sure to update the `included files filter` to your Apigee Edgemicro Gateway configuration file; change `org-env-config.yaml` to your Apigee Edge organization and environment.
+The configuration for Google Cloud Build is shown below. Make sure to update the `included files filter` to your Apigee Edge Microgateway configuration file. **Be sure to change `org-env-config.yaml` to your Apigee Edge organization and environment.**
 
 ![Build Configuration](images/gcp-cloud-build-config.png)
 
 ## Secret.yaml
-If you followed the instructions in "[creating a Kubernetes cluster](https://github.com/apigee-internal/microgateway/tree/master/kubernetes)", then you already created the `mgwsecret` in your K8S cluster. The Microgateway will use this secret object to pull the Apigee organization name, environment, microgateway key & secret, and the Edge Microgateway configuration file.  The GCP Build will use this `secret.yaml` file to update the existing secret object in the Kubernetes cluster.  
+If you followed the instructions in "[creating a Kubernetes cluster](https://github.com/apigee-internal/microgateway/tree/master/kubernetes)", then you already created the `mgwsecret` in your K8S cluster. The Microgateway will use this secret object to pull the Apigee organization name, environment, microgateway key & secret, and the Edge Microgateway configuration file when the pod starts the container.  These values will be available to the Microgateway via environment variables.  The GCP Build uses this `secret.yaml` file to update the existing secret object in the Kubernetes cluster.  
 
 ## cloudbuild.yaml
 The `cloudbuild.yaml` file contains three steps.  
-1. executes `update-secret-yaml.sh`, which updates the secret.yaml file with the changes in the Edgemicro config file and creates a new file secret.yaml file.
-2. apply the updated secret.yaml file (push the changes to the k8s cluster). **This does not update the existing Microgateway pods.**
-3. delete the existing microgateway pods, because they will not pick up the changes from the updated secrets object and the deployment will automatically create new pods which will have the updated configuration.  
+1. Execute `update-secret-yaml.sh`, which updates the secret.yaml file with the changes in the Edgemicro config file and creates a new secret.yaml file.
+2. Apply the updated secret.yaml file (push the changes to the k8s cluster). **This does not update the existing Microgateway pods.**
+3. Delete the existing microgateway pods, because they will not pick up the changes from the updated secrets object. The deployment will automatically create new pods which will have the updated configuration.  
 
 ## Update the microgateway.sh file
-Add the following to the microgateway.sh file.
+Add the following to the `microgateway.sh` file.
 * Apigee org
 * Apigee env
 * Microgateway key
@@ -69,11 +69,11 @@ spikearrest:
 git push -u origin master
 ```
 
-5. Once you push your changes you should see the new build appear and run in the build history.  You can click on the build and view the logs to see each build step execute.
+5. Once you push your changes you should see the new build appear and run in the build history.  You can click on the build and view the logs of each build step.
 
 ![build history](images/gcp-cloud-build-history.png)
 
-You can also navigate to **Kubernetes Engine** > **Workloads** and click on the `edge-microgateway` workload to view the new pod starting and the old pod terminating.
+You can also navigate to **Kubernetes Engine** > **Workloads** and click on the `edge-microgateway` workload to see the new pod start and the old pod should be in the `terminating` state.
 
 ![Kubernetes workloads](images/gcp-k8s-workloads.png)
 
