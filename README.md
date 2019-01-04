@@ -69,7 +69,7 @@ spikearrest:
 git push -u origin master
 ```
 
-5. Once you push your changes you should see the new build appear and run in the build history.  You can click on the build and view the logs of each build step.
+5. Once you push your changes you should see the new build appear in the build history.  You can click on the build and view the logs of each build step.
 
 ![build history](images/gcp-cloud-build-history.png)
 
